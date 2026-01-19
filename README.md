@@ -39,6 +39,3 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 
 ---
 
-## License
-
-MIT License
