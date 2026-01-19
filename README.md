@@ -52,10 +52,7 @@ This application allows users to:
 
 4. Run the application:
    streamlit run app.py
-
-5. Open in browser:
-   http://localhost:8501
-
+   
 ---
 
 ## Usage
@@ -72,21 +69,6 @@ This application allows users to:
 - Select the column containing review text
 - Analyze and export insights
 
----
-
-## Project Structure
-
-customer-insight/
-├── app.py
-├── pages/
-│   └── dashboard.py
-├── utils/
-│   ├── analyzer.py
-│   └── exporter.py
-├── .streamlit/
-│   └── secrets.toml
-├── requirements.txt
-└── README.md
 
 ---
 
