@@ -7,7 +7,7 @@ Customer Insight AI is a Streamlit application that analyzes customer reviews us
 ## Live Demo
 
 Streamlit Web App:  
-[Coming Soon]
+https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 
 ---
 
