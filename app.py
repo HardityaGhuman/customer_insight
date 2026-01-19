@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Customer Insight AI",
+    page_title="Customer Insight Analysis",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -33,7 +33,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">Customer Insight AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Customer Insight Analysis</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Transform Customer Feedback into Actionable Business Intelligence</div>', unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
