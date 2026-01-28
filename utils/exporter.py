@@ -1,60 +1,102 @@
 import pandas as pd
 from datetime import datetime
 import io
+import json
 
-def export_to_csv(analysis_text, reviews_text):
-    """Export analysis to CSV format"""
-    
-    data = {
-        'Timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-        'Reviews': [reviews_text[:500] + "..."],  # Truncate for CSV
-        'Analysis': [analysis_text]
+
+# ---------------- CSV EXPORT ----------------
+
+def export_to_csv(analysis_data, reviews_text):
+    """
+    Export structured analysis data to CSV.
+    CSV is data-first, not narrative.
+    """
+
+    row = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "positive_sentiment": analysis_data["sentiment_distribution"]["positive"],
+        "negative_sentiment": analysis_data["sentiment_distribution"]["negative"],
+        "neutral_sentiment": analysis_data["sentiment_distribution"]["neutral"],
+        "urgency": analysis_data["urgency"],
+        "top_pain_points": "; ".join(analysis_data["top_pain_points"]),
+        "top_positive_drivers": "; ".join(analysis_data["top_positive_drivers"]),
+        "key_themes": "; ".join(analysis_data["key_themes"]),
+        "recommended_actions": "; ".join(analysis_data["recommended_actions"]),
+        "num_reviews": len(reviews_text.split("\n"))
     }
-    
-    df = pd.DataFrame(data)
-    
-    # Convert to CSV
-    csv_buffer = io.StringIO()
-    df.to_csv(csv_buffer, index=False)
-    
-    return csv_buffer.getvalue()
 
-def export_to_excel(analysis_text, reviews_text, sentiment_data):
-    """Export analysis to Excel format with multiple sheets"""
-    
+    df = pd.DataFrame([row])
+
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False)
+    return buffer.getvalue()
+
+
+# ---------------- EXCEL EXPORT ----------------
+
+def export_to_excel(analysis_data, reviews_text):
+    """
+    Export analysis to Excel with clean, structured sheets.
+    """
+
     output = io.BytesIO()
-    
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+
         # Sheet 1: Summary
         summary_df = pd.DataFrame({
-            'Metric': ['Analysis Date', 'Total Reviews', 'Positive %', 'Negative %'],
-            'Value': [
+            "Metric": [
+                "Analysis Date",
+                "Total Reviews",
+                "Positive %",
+                "Negative %",
+                "Neutral %",
+                "Urgency"
+            ],
+            "Value": [
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                len(reviews_text.split('\n')),
-                sentiment_data['positive'],
-                sentiment_data['negative']
+                len(reviews_text.split("\n")),
+                analysis_data["sentiment_distribution"]["positive"],
+                analysis_data["sentiment_distribution"]["negative"],
+                analysis_data["sentiment_distribution"]["neutral"],
+                analysis_data["urgency"]
             ]
         })
-        summary_df.to_excel(writer, sheet_name='Summary', index=False)
-        
-        # Sheet 2: Full Analysis
-        analysis_df = pd.DataFrame({
-            'Analysis': [analysis_text]
+        summary_df.to_excel(writer, sheet_name="Summary", index=False)
+
+        # Sheet 2: Insights
+        insights_df = pd.DataFrame({
+            "Top Pain Points": analysis_data["top_pain_points"],
+            "Top Positive Drivers": analysis_data["top_positive_drivers"],
+            "Key Themes": analysis_data["key_themes"]
         })
-        analysis_df.to_excel(writer, sheet_name='Full Analysis', index=False)
-        
-        # Sheet 3: Reviews
+        insights_df.to_excel(writer, sheet_name="Insights", index=False)
+
+        # Sheet 3: Recommendations
+        actions_df = pd.DataFrame({
+            "Recommended Actions": analysis_data["recommended_actions"]
+        })
+        actions_df.to_excel(writer, sheet_name="Recommendations", index=False)
+
+        # Sheet 4: Raw Reviews
         reviews_df = pd.DataFrame({
-            'Review': reviews_text.split('\n')
+            "Review": reviews_text.split("\n")
         })
-        reviews_df.to_excel(writer, sheet_name='Reviews', index=False)
-    
+        reviews_df.to_excel(writer, sheet_name="Reviews", index=False)
+
     output.seek(0)
     return output.getvalue()
 
-def create_markdown_report(analysis_text, reviews_text, sentiment_data):
-    """Create a markdown formatted report"""
-    
+
+# ---------------- MARKDOWN REPORT ----------------
+
+def create_markdown_report(analysis_data, reviews_text):
+    """
+    Human-readable report derived entirely from structured data.
+    """
+
+    sentiment = analysis_data["sentiment_distribution"]
+
     report = f"""# Customer Insight Analysis Report
 
 **Generated:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -63,74 +105,54 @@ def create_markdown_report(analysis_text, reviews_text, sentiment_data):
 
 ## Sentiment Overview
 
-- **Positive Sentiment:** {sentiment_data['positive']}%
-- **Negative Sentiment:** {sentiment_data['negative']}%
-- **Total Reviews Analyzed:** {len(reviews_text.split('\n'))}
+- **Positive:** {sentiment["positive"]}%
+- **Negative:** {sentiment["negative"]}%
+- **Neutral:** {sentiment["neutral"]}%
+- **Urgency Level:** {analysis_data["urgency"].capitalize()}
+- **Total Reviews:** {len(reviews_text.split("\\n"))}
 
 ---
 
-## Detailed Analysis
-
-{analysis_text}
-
----
-
-## Sample Reviews
-```
-{reviews_text[:1000]}
-```
+## Key Themes
+{chr(10).join(f"- {theme}" for theme in analysis_data["key_themes"])}
 
 ---
 
-## Key Metrics
-
-| Metric | Value |
-|--------|-------|
-| Analysis Date | {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} |
-| Total Reviews | {len(reviews_text.split('\n'))} |
-| Positive Sentiment | {sentiment_data['positive']}% |
-| Negative Sentiment | {sentiment_data['negative']}% |
-| Neutral Sentiment | {100 - sentiment_data['positive'] - sentiment_data['negative']}% |
+## Top Customer Pain Points
+{chr(10).join(f"- {point}" for point in analysis_data["top_pain_points"])}
 
 ---
 
-## Recommendations
-
-Based on the analysis above, consider implementing the insights provided to improve customer satisfaction and address key pain points.
-
----
-
-*Report generated by Customer Insight AI - Powered by Google Gemini*
+## What Customers Like
+{chr(10).join(f"- {driver}" for driver in analysis_data["top_positive_drivers"])}
 
 ---
 
-### Need Help?
+## Recommended Actions
+{chr(10).join(f"- {action}" for action in analysis_data["recommended_actions"])}
 
-For questions or support, contact your data analytics team.
+---
 
-### Resources
+---
 
-- [Customer Service Dashboard](#)
-- [Product Feedback Portal](#)
-- [Analytics Documentation](#)
+*Report generated by Customer Insight System (Phase-1 GenAI Architecture)*  
 """
-    
+
     return report
 
-def export_to_json(analysis_text, reviews_text, sentiment_data):
-    """Export analysis to JSON format"""
-    import json
-    
-    data = {
+
+# ---------------- JSON EXPORT ----------------
+
+def export_to_json(analysis_data, reviews_text):
+    """
+    Machine-readable export.
+    This mirrors the Phase-1 contract exactly.
+    """
+
+    payload = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "summary": {
-            "total_reviews": len(reviews_text.split('\n')),
-            "positive_sentiment": sentiment_data['positive'],
-            "negative_sentiment": sentiment_data['negative'],
-            "neutral_sentiment": 100 - sentiment_data['positive'] - sentiment_data['negative']
-        },
-        "analysis": analysis_text,
-        "reviews": reviews_text.split('\n')[:100]  # First 100 reviews
+        "analysis": analysis_data,
+        "reviews": reviews_text.split("\n")
     }
-    
-    return json.dumps(data, indent=2)
+
+    return json.dumps(payload, indent=2)

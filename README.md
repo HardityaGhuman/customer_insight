@@ -1,41 +1,57 @@
-# Customer Insight AI
+# Customer Insight Dashboard
 
-Customer Insight AI is a Streamlit application that analyzes customer reviews using large language models to generate structured, actionable business insights.
+Customer Insight Dashboard is a Streamlit based application for analyzing customer reviews and converting unstructured feedback into structured business insights.
+
+The project focuses on building a reliable review analysis pipeline rather than UI polish or model experimentation.
 
 ---
 
 ## Live Demo
 
-Streamlit Web App:  
 https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 
 ---
 
-## Overview
+## What the App Does
 
-- Accepts customer reviews as text or CSV/Excel input  
-- Performs AI-powered sentiment analysis using Google Gemini  
-- Identifies key pain points and themes  
-- Generates actionable business recommendations  
-- Supports export in CSV, Excel, and Markdown formats  
+- Accepts customer reviews via:
+  - Manual text input
+  - CSV or Excel file upload
+- Analyzes reviews to determine:
+  - Overall sentiment distribution
+  - Common customer pain points
+  - Positive drivers
+  - Key themes
+  - Urgency level
+  - Actionable recommendations
+- Allows exporting results as:
+  - CSV
+  - Excel
+  - Markdown
+  - JSON (for programmatic use)
 
 ---
 
-## Features
+## Implementation Notes
 
-- LLM-based sentiment and feedback analysis  
-- Text input and file upload support  
-- Structured insight generation  
-- Lightweight, insight-focused dashboard  
+- Review analysis is performed using a Large Language Model (Google Gemini)
+- The model is treated as an external dependency and not a source of truth
+- Outputs are constrained to a predefined JSON schema
+- Invalid or failed model responses fall back to a simple heuristic analysis
+- All downstream components operate on structured data only
 
 ---
 
 ## Tech Stack
 
 - Streamlit  
-- Google Gemini (gemini-2.5-flash)  
+- Google Gemini (`gemini-2.5-flash`)  
 - Pandas  
 - openpyxl  
 
 ---
 
+## Project Status
+
+Phase 1 complete.  
+The core analysis pipeline is stable and designed to be extended with additional automation or agent-based logic.

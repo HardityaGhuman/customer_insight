@@ -1,26 +1,47 @@
 import streamlit as st
 import pandas as pd
-from utils.analyzer import analyze_reviews, extract_sentiment_score
-from utils.exporter import export_to_csv, export_to_excel, create_markdown_report
 
-st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
+from utils.analyzer import analyze_with_fallback
+from utils.exporter import (
+    export_to_csv,
+    export_to_excel,
+    create_markdown_report,
+)
+
+# ---------------- PAGE SETUP ----------------
+
+st.set_page_config(
+    page_title="Customer Insight Dashboard",
+    page_icon="📊",
+    layout="wide"
+)
 
 st.title("Customer Insight Dashboard")
 
-# Sidebar for input options
+# ---------------- SIDEBAR ----------------
+
 with st.sidebar:
     st.header("Input Options")
-    input_method = st.radio("Choose input method:", ["Text Input", "Upload CSV/Excel"])
+    input_method = st.radio(
+        "Choose input method:",
+        ["Text Input", "Upload CSV/Excel"]
+    )
 
-# Initialize session state
+# ---------------- SESSION STATE ----------------
+
 if "analysis_result" not in st.session_state:
     st.session_state.analysis_result = None
+
+if "analysis_source" not in st.session_state:
+    st.session_state.analysis_source = None
+
 if "reviews_text" not in st.session_state:
     st.session_state.reviews_text = ""
 
 reviews_input = ""
 
 # ---------------- INPUT ----------------
+
 if input_method == "Text Input":
     reviews_input = st.text_area(
         "Enter customer reviews (one per line):",
@@ -35,7 +56,10 @@ if input_method == "Text Input":
     st.session_state.reviews_text = reviews_input
 
 else:
-    uploaded_file = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+    uploaded_file = st.file_uploader(
+        "Upload CSV or Excel file",
+        type=["csv", "xlsx"]
+    )
 
     if uploaded_file:
         try:
@@ -44,15 +68,18 @@ else:
             else:
                 df = pd.read_excel(uploaded_file)
 
-            st.success(f"Loaded {len(df)} reviews")
+            st.success(f"Loaded {len(df)} rows")
             st.dataframe(df.head(), use_container_width=True)
 
             review_column = st.selectbox(
-                "Select column containing reviews:", df.columns
+                "Select column containing reviews:",
+                df.columns
             )
 
             if review_column:
-                reviews_input = "\n".join(df[review_column].astype(str).tolist())
+                reviews_input = "\n".join(
+                    df[review_column].astype(str).tolist()
+                )
                 st.session_state.reviews_text = reviews_input
                 st.info(
                     f"Loaded {len(df)} reviews from column '{review_column}'"
@@ -62,50 +89,79 @@ else:
             st.error(f"Error loading file: {e}")
 
 # ---------------- ANALYSIS ----------------
+
 analyze_button = st.button(
-    "Analyze Reviews", type="primary", use_container_width=True
+    "Analyze Reviews",
+    type="primary",
+    use_container_width=True
 )
 
-# 🔒 Hardcoded model (no dropdown)
-model_choice = "gemini-2.5-flash"
-
 if analyze_button and reviews_input.strip():
-    with st.spinner("Analyzing your reviews..."):
-        analysis = analyze_reviews(reviews_input, model_choice)
+    with st.spinner("Analyzing reviews..."):
+        analysis, source = analyze_with_fallback(reviews_input)
 
         if analysis:
             st.session_state.analysis_result = analysis
+            st.session_state.analysis_source = source
             st.success("Analysis complete!")
         else:
-            st.error("Analysis failed. Please check your API key.")
+            st.error("Analysis failed completely.")
 
 # ---------------- RESULTS ----------------
+
 if st.session_state.analysis_result:
     st.markdown("---")
 
-    positive_pct, negative_pct = extract_sentiment_score(
-        st.session_state.analysis_result
-    )
+    analysis = st.session_state.analysis_result
+    source = st.session_state.analysis_source
+    sentiment = analysis["sentiment_distribution"]
 
-    # ---------------- ANALYSIS TEXT ----------------
-    st.markdown("## AI-Generated Insights")
-    st.markdown(st.session_state.analysis_result)
+    if source == "heuristic":
+        st.warning(
+            "LLM analysis failed. Displaying heuristic fallback results."
+        )
+
+    # ---------------- SENTIMENT OVERVIEW ----------------
+
+    st.subheader("Sentiment Overview")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Positive", f"{sentiment['positive']}%")
+    col2.metric("Negative", f"{sentiment['negative']}%")
+    col3.metric("Neutral", f"{sentiment['neutral']}%")
+
+    st.markdown(f"**Urgency Level:** {analysis['urgency'].capitalize()}")
+
+    # ---------------- INSIGHTS ----------------
+
+    st.markdown("---")
+    st.subheader("Key Themes")
+    for theme in analysis["key_themes"]:
+        st.write(f"- {theme}")
+
+    st.subheader("Top Customer Pain Points")
+    for point in analysis["top_pain_points"]:
+        st.write(f"- {point}")
+
+    st.subheader("What Customers Like")
+    for driver in analysis["top_positive_drivers"]:
+        st.write(f"- {driver}")
+
+    st.subheader("Recommended Actions")
+    for action in analysis["recommended_actions"]:
+        st.write(f"- {action}")
 
     # ---------------- EXPORT ----------------
+
     st.markdown("---")
-    st.markdown("## Export Results")
+    st.subheader("Export Results")
 
     col1, col2, col3 = st.columns(3)
 
-    sentiment_data = {
-        "positive": positive_pct,
-        "negative": negative_pct,
-    }
-
     with col1:
         csv_data = export_to_csv(
-            st.session_state.analysis_result,
-            st.session_state.reviews_text,
+            analysis,
+            st.session_state.reviews_text
         )
         st.download_button(
             "Download CSV",
@@ -117,9 +173,8 @@ if st.session_state.analysis_result:
 
     with col2:
         excel_data = export_to_excel(
-            st.session_state.analysis_result,
-            st.session_state.reviews_text,
-            sentiment_data,
+            analysis,
+            st.session_state.reviews_text
         )
         st.download_button(
             "Download Excel",
@@ -131,9 +186,8 @@ if st.session_state.analysis_result:
 
     with col3:
         markdown_data = create_markdown_report(
-            st.session_state.analysis_result,
-            st.session_state.reviews_text,
-            sentiment_data,
+            analysis,
+            st.session_state.reviews_text
         )
         st.download_button(
             "Download Report (MD)",
@@ -144,4 +198,6 @@ if st.session_state.analysis_result:
         )
 
 else:
-    st.info("Enter reviews above and click **Analyze Reviews** to get started!")
+    st.info(
+        "Enter reviews above and click **Analyze Reviews** to get started!"
+    )
