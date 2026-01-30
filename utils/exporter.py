@@ -72,9 +72,9 @@ def export_to_excel(analysis_data, reviews_text, phase2_data=None):
 
         # Sheet 2: Insights
         insights_df = pd.DataFrame({
-            "Top Pain Points": analysis_data["top_pain_points"],
-            "Top Positive Drivers": analysis_data["top_positive_drivers"],
-            "Key Themes": analysis_data["key_themes"]
+            "Top Pain Points": ["; ".join(analysis_data["top_pain_points"])],
+            "Top Positive Drivers": ["; ".join(analysis_data["top_positive_drivers"])],
+            "Key Themes": ["; ".join(analysis_data["key_themes"])]
         })
         insights_df.to_excel(writer, sheet_name="Insights", index=False)
 
