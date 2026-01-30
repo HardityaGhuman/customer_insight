@@ -2,6 +2,23 @@ import google.generativeai as genai
 import streamlit as st
 import json
 
+# ---------------- PHASE 2 CONSTANTS ----------------
+
+ALLOWED_CATEGORIES = [
+    "delivery",
+    "product",
+    "support",
+    "billing",
+    "app",
+    "other"
+]
+
+ALLOWED_ESCALATION_LEVELS = [
+    "none",
+    "monitor",
+    "review",
+    "escalate"
+]
 
 # ---------------- CONFIG ----------------
 
@@ -158,3 +175,111 @@ def analyze_with_fallback(reviews_text):
     }
 
     return fallback, "heuristic"
+
+# ---------------- PHASE 2 DECISION ----------------
+
+def decide_actions(analysis_data, model_name="gemini-2.5-flash"):
+    """
+    Phase-2 reasoning unit.
+    Uses Phase-1 output to decide category and escalation.
+    """
+
+    model = genai.GenerativeModel(model_name)
+
+    prompt = f"""
+You are a decision-making system.
+
+Based ONLY on the structured analysis below,
+decide:
+
+1. issue_category
+2. escalation_level
+
+Return ONLY valid JSON in this format:
+
+{{
+  "issue_category": {{
+    "category": one of {ALLOWED_CATEGORIES},
+    "confidence": number between 0 and 1
+  }},
+  "escalation": {{
+    "level": one of {ALLOWED_ESCALATION_LEVELS},
+    "reason": string
+  }}
+}}
+
+Rules:
+- Do NOT invent categories
+- Do NOT include explanations outside JSON
+- Be conservative when confidence is low
+
+Analysis data:
+{json.dumps(analysis_data)}
+"""
+
+    response = model.generate_content(prompt)
+    return extract_json(response.text)
+
+def categorize_issue(category, confidence):
+    if category not in ALLOWED_CATEGORIES:
+        raise ValueError(f"Invalid category: {category}")
+
+    return {
+        "category": category,
+        "confidence": confidence
+    }
+
+def decide_escalation(level, reason):
+    if level not in ALLOWED_ESCALATION_LEVELS:
+        raise ValueError(f"Invalid escalation level: {level}")
+
+    return {
+        "level": level,
+        "reason": reason
+    }
+
+import os
+from datetime import datetime
+
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "decisions.jsonl")
+
+
+def log_decision(category_data, escalation_data):
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "issue_category": category_data,
+        "escalation": escalation_data
+    }
+
+    with open(LOG_FILE, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def phase2_process(analysis_data):
+    """
+    Phase-2 orchestrator:
+    - LLM decides
+    - Tools validate
+    - System logs
+    """
+
+    decision = decide_actions(analysis_data)
+
+    category_data = categorize_issue(
+        decision["issue_category"]["category"],
+        decision["issue_category"]["confidence"]
+    )
+
+    escalation_data = decide_escalation(
+        decision["escalation"]["level"],
+        decision["escalation"]["reason"]
+    )
+
+    log_decision(category_data, escalation_data)
+
+    return {
+        "category": category_data,
+        "escalation": escalation_data
+    }

@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from utils.analyzer import analyze_with_fallback
+from utils.analyzer import analyze_with_fallback, phase2_process
 from utils.exporter import (
     export_to_csv,
     export_to_excel,
@@ -34,6 +34,9 @@ if "analysis_result" not in st.session_state:
 
 if "analysis_source" not in st.session_state:
     st.session_state.analysis_source = None
+
+if "phase2_result" not in st.session_state:
+    st.session_state.phase2_result = None
 
 if "reviews_text" not in st.session_state:
     st.session_state.reviews_text = ""
@@ -103,6 +106,10 @@ if analyze_button and reviews_input.strip():
         if analysis:
             st.session_state.analysis_result = analysis
             st.session_state.analysis_source = source
+
+            # -------- Phase 2 decision --------
+            st.session_state.phase2_result = phase2_process(analysis)
+
             st.success("Analysis complete!")
         else:
             st.error("Analysis failed completely.")
@@ -114,6 +121,7 @@ if st.session_state.analysis_result:
 
     analysis = st.session_state.analysis_result
     source = st.session_state.analysis_source
+    phase2 = st.session_state.phase2_result
     sentiment = analysis["sentiment_distribution"]
 
     if source == "heuristic":
@@ -161,7 +169,8 @@ if st.session_state.analysis_result:
     with col1:
         csv_data = export_to_csv(
             analysis,
-            st.session_state.reviews_text
+            st.session_state.reviews_text,
+            phase2
         )
         st.download_button(
             "Download CSV",
@@ -174,7 +183,8 @@ if st.session_state.analysis_result:
     with col2:
         excel_data = export_to_excel(
             analysis,
-            st.session_state.reviews_text
+            st.session_state.reviews_text,
+            phase2
         )
         st.download_button(
             "Download Excel",
@@ -187,7 +197,8 @@ if st.session_state.analysis_result:
     with col3:
         markdown_data = create_markdown_report(
             analysis,
-            st.session_state.reviews_text
+            st.session_state.reviews_text,
+            phase2
         )
         st.download_button(
             "Download Report (MD)",

@@ -1,8 +1,8 @@
 # Customer Insight Dashboard
 
-Customer Insight Dashboard is a Streamlit based application for analyzing customer reviews and converting unstructured feedback into structured business insights.
+Customer Insight Dashboard is a Streamlit-based application for analyzing customer reviews and converting unstructured feedback into structured business insights.
 
-The project focuses on building a reliable review analysis pipeline rather than UI polish or model experimentation.
+The project focuses on building a **reliable, extensible analysis pipeline** rather than UI polish or model experimentation.
 
 ---
 
@@ -24,6 +24,10 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
   - Key themes
   - Urgency level
   - Actionable recommendations
+- Automatically derives internal decisions:
+  - Issue category (e.g. delivery, product, support)
+  - Escalation level (monitor / review / escalate)
+- Logs decisions for auditability and downstream automation
 - Allows exporting results as:
   - CSV
   - Excel
@@ -35,10 +39,15 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 ## Implementation Notes
 
 - Review analysis is performed using a Large Language Model (Google Gemini)
-- The model is treated as an external dependency and not a source of truth
-- Outputs are constrained to a predefined JSON schema
-- Invalid or failed model responses fall back to a simple heuristic analysis
+- The model is treated as an external dependency, not a source of truth
+- All LLM outputs are constrained to a predefined JSON schema
+- Invalid or failed model responses fall back to a deterministic heuristic analysis
 - All downstream components operate on structured data only
+- The system is structured in multiple phases:
+  - **Phase 1**: Review analysis and insight extraction
+  - **Phase 2**: Decision-making based on structured analysis (categorization and escalation)
+- Decision logic is separated from analysis logic and executed deterministically
+- Decisions are logged and exportable, but are not surfaced in the UI by default
 
 ---
 
@@ -53,5 +62,5 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 
 ## Project Status
 
-Phase 1 complete.  
-The core analysis pipeline is stable and designed to be extended with additional automation or agent-based logic.
+Phase 1 and Phase 2 complete.  
+The system includes a stable analysis layer and a decision layer, and is designed to be extended with persistent memory, automation, or agent-based workflows.

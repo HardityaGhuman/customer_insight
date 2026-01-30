@@ -61,7 +61,7 @@ with col1:
 
 with col2:
     st.markdown("""
-    - **Export Reports**: Download insights as PDF
+    - **Export Reports**: CSV, Excel, and Markdown
     - **Actionable Insights**: Get specific recommendations
     """)
 
