@@ -91,12 +91,25 @@ def export_to_excel(analysis_data, reviews_text, phase2_data=None):
         reviews_df.to_excel(writer, sheet_name="Reviews", index=False)
 
         if phase2_data:
+            pd.DataFrame(
+                {"Top Pain Points": analysis_data["top_pain_points"]}
+            ).to_excel(writer, sheet_name="Pain Points", index=False)
+
+            pd.DataFrame(
+                {"Top Positive Drivers": analysis_data["top_positive_drivers"]}
+            ).to_excel(writer, sheet_name="Positive Drivers", index=False)
+
+            pd.DataFrame(
+                {"Key Themes": analysis_data["key_themes"]}
+            ).to_excel(writer, sheet_name="Key Themes", index=False)
+
             decision_df = pd.DataFrame({
                 "Issue Category": [phase2_data["category"]["category"]],
                 "Category Confidence": [phase2_data["category"]["confidence"]],
                 "Escalation Level": [phase2_data["escalation"]["level"]],
-                "Escalation Reason": [phase2_data["escalation"]["reason"]]
+                "Escalation Reason": [phase2_data["escalation"]["reason"]],
             })
+
             decision_df.to_excel(writer, sheet_name="Decision", index=False)
 
     output.seek(0)
