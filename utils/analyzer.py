@@ -257,12 +257,15 @@ def log_decision(category_data, escalation_data):
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(entry) + "\n")
 
+from utils.state_manager import load_state, save_state
+
 def phase2_process(analysis_data):
     """
     Phase-2 orchestrator:
     - LLM decides
     - Tools validate
     - System logs
+    - State is updated
     """
 
     decision = decide_actions(analysis_data)
@@ -277,9 +280,26 @@ def phase2_process(analysis_data):
         decision["escalation"]["reason"]
     )
 
+    # --- LOAD STATE ---
+    state = load_state()
+
+    # Update issue count
+    category = category_data["category"]
+    state["issue_counts"][category] += 1
+
+    # Update escalation state (idempotent)
+    if escalation_data["level"] != "none":
+        state["escalation"]["has_been_escalated"] = True
+        state["escalation"]["level"] = escalation_data["level"]
+
+    # --- SAVE STATE ---
+    save_state(state)
+
+    # Log decision (already implemented)
     log_decision(category_data, escalation_data)
 
     return {
         "category": category_data,
-        "escalation": escalation_data
+        "escalation": escalation_data,
+        "state_snapshot": state
     }

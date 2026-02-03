@@ -158,6 +158,16 @@ if st.session_state.analysis_result:
     st.subheader("Recommended Actions")
     for action in analysis["recommended_actions"]:
         st.write(f"- {action}")
+    
+    st.markdown("---")
+    st.subheader("Internal Decision (Phase 2)")
+
+    st.write(f"**Issue Category:** {phase2['category']['category']}")
+    st.write(f"**Category Confidence:** {phase2['category']['confidence']}")
+    st.write(f"**Escalation Level:** {phase2['escalation']['level']}")
+    st.write(f"**Escalation Reason:** {phase2['escalation']['reason']}")
+
+    
 
     # ---------------- EXPORT ----------------
 

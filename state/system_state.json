@@ -1,0 +1,15 @@
+{
+  "issue_counts": {
+    "billing": 0,
+    "delivery": 0,
+    "product": 0,
+    "support": 0,
+    "app": 1,
+    "other": 0
+  },
+  "escalation": {
+    "has_been_escalated": true,
+    "level": "escalate"
+  },
+  "last_updated": "2026-02-03T11:18:33.474674"
+}
