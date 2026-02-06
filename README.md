@@ -1,6 +1,6 @@
 # Customer Insight Dashboard
 
-Customer Insight Dashboard is a Streamlit-based application for analyzing customer reviews and converting unstructured feedback into structured business insights.
+Customer Insight Dashboard is a Streamlit based application for analyzing customer reviews and converting unstructured feedback into structured business insights.
 
 The project focuses on building a **reliable, extensible analysis pipeline** rather than UI polish or model experimentation.
 
@@ -8,7 +8,7 @@ The project focuses on building a **reliable, extensible analysis pipeline** rat
 
 ## Live Demo
 
-https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
+https://customerinsight-kuamgpzt4v4dmearadxzus.streamlit.app/
 
 ---
 
@@ -27,7 +27,7 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 - Automatically derives internal decisions:
   - Issue category (e.g. delivery, product, support)
   - Escalation level (monitor / review / escalate)
-- Logs decisions for auditability and downstream automation
+- Persists decisions and system state for auditability
 - Allows exporting results as:
   - CSV
   - Excel
@@ -36,31 +36,53 @@ https://customerinsight-vekjyeergmiwq4efckdnhs.streamlit.app/
 
 ---
 
-## Implementation Notes
+## Architecture Overview
 
-- Review analysis is performed using a Large Language Model (Google Gemini)
-- The model is treated as an external dependency, not a source of truth
-- All LLM outputs are constrained to a predefined JSON schema
-- Invalid or failed model responses fall back to a deterministic heuristic analysis
-- All downstream components operate on structured data only
-- The system is structured in multiple phases:
-  - **Phase 1**: Review analysis and insight extraction
-  - **Phase 2**: Decision-making based on structured analysis (categorization and escalation)
-- Decision logic is separated from analysis logic and executed deterministically
-- Decisions are logged and exportable, but are not surfaced in the UI by default
+The system is built in progressive phases with clear control boundaries:
+
+- **LLM**: Used only for reasoning and structured intent generation
+- **Code**: Validates outputs, enforces rules, and executes actions
+- **Storage**: Acts as the source of truth for decisions and state
+
+### Phase Breakdown
+
+- **Phase 1 — Analysis**
+  - Converts raw reviews into structured insights
+  - Enforces strict JSON schemas
+  - Includes deterministic fallback when the model fails
+
+- **Phase 2 — Decision Making**
+  - Uses structured analysis to derive issue category and escalation level
+  - Validates all decisions deterministically
+  - Separates reasoning from execution
+
+- **Phase 3.1 — Persistence & State**
+  - Introduces SQLite backed persistence
+  - Stores:
+    - Decision logs (audit trail)
+    - Current system state (issue counts, escalation status)
+  - Ensures system behavior is consistent across restarts
+  - LLMs are never used for memory or state
 
 ---
 
 ## Tech Stack
 
-- Streamlit  
-- Google Gemini (`gemini-2.5-flash`)  
-- Pandas  
-- openpyxl  
+- Streamlit
+- Google Gemini (`gemini-2.5-flash`)
+- Pandas
+- openpyxl
+- SQLite
 
 ---
 
 ## Project Status
 
-Phase 1 and Phase 2 complete.  
-The system includes a stable analysis layer and a decision layer, and is designed to be extended with persistent memory, automation, or agent-based workflows.
+Phase 3.1 complete.
+
+The system now includes:
+- Structured analysis
+- Deterministic decision-making
+- Persistent state and audit logs
+
+The project is designed to be extended with stronger consistency guarantees, automation, and controlled agentic behavior in later phases.
