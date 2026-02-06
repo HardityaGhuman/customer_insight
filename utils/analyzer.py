@@ -1,7 +1,9 @@
-import google.generativeai as genai
-import streamlit as st
 import json
+import streamlit as st
+import google.generativeai as genai
+from datetime import datetime
 
+from utils.db import get_state, set_state, insert_decision
 # ---------------- PHASE 2 CONSTANTS ----------------
 
 ALLOWED_CATEGORIES = [
@@ -238,26 +240,13 @@ def decide_escalation(level, reason):
         "reason": reason
     }
 
-import os
-from datetime import datetime
-
-LOG_DIR = "logs"
-LOG_FILE = os.path.join(LOG_DIR, "decisions.jsonl")
-
-
 def log_decision(category_data, escalation_data):
-    os.makedirs(LOG_DIR, exist_ok=True)
-
-    entry = {
+    decision = {
         "timestamp": datetime.utcnow().isoformat(),
         "issue_category": category_data,
         "escalation": escalation_data
     }
-
-    with open(LOG_FILE, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-
-from utils.state_manager import load_state, save_state
+    insert_decision(decision)
 
 def phase2_process(analysis_data):
     """
@@ -280,20 +269,24 @@ def phase2_process(analysis_data):
         decision["escalation"]["reason"]
     )
 
-    # --- LOAD STATE ---
-    state = load_state()
+    # --- LOAD STATE FROM DB ---
+    issue_counts = get_state(
+        "issue_counts",
+        {c: 0 for c in ALLOWED_CATEGORIES}
+    )
 
-    # Update issue count
+    escalation_active = get_state("escalation_active", False)
+
+    # --- UPDATE STATE ---
     category = category_data["category"]
-    state["issue_counts"][category] += 1
+    issue_counts[category] += 1
 
-    # Update escalation state (idempotent)
     if escalation_data["level"] != "none":
-        state["escalation"]["has_been_escalated"] = True
-        state["escalation"]["level"] = escalation_data["level"]
+        escalation_active = True
 
-    # --- SAVE STATE ---
-    save_state(state)
+    # --- SAVE STATE TO DB ---
+    set_state("issue_counts", issue_counts)
+    set_state("escalation_active", escalation_active)
 
     # Log decision (already implemented)
     log_decision(category_data, escalation_data)
@@ -301,5 +294,8 @@ def phase2_process(analysis_data):
     return {
         "category": category_data,
         "escalation": escalation_data,
-        "state_snapshot": state
+        "state_snapshot": {
+            "issue_counts": issue_counts,
+            "escalation_active": escalation_active
+        }
     }

@@ -8,7 +8,7 @@ __pycache__/
 dist/
 build/
 
-
+.streamlit/
 venv/
 .env/
 .env.*
@@ -36,4 +36,5 @@ logs/
 *.csv
 *.xlsx
 
-state/
+data/
+logs/
